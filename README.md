@@ -1,5 +1,5 @@
 # mcce-soapt2
-Fernlehre 1 // Infrastructure-as-Code / AWS
+##Fernlehre 1 // Infrastructure-as-Code / AWS
 
 - Create an EC2 instance and install docker.
 - Assign the domain virtp.mcce.mathiasrangger.ch to the host.
