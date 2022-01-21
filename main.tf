@@ -10,8 +10,20 @@ data "aws_ami" "amazon-2" {
 }
 
 
+data "vault_generic_secret" "dns-config"{
+ path = "kv/dns-config"
+}
+
+
+resource "random_password" "admin-password" {
+  length = 16
+  special = true
+  override_special = "_%@"
+}
+
+
 resource "aws_instance" "docker-host" {
-  user_data = templatefile("${path.module}/templates/init.tpl", {domain_name = var.domain_name, email_address = var.email_address, dns_username = var.dns_username, dns_password = var.dns_password, dns_token = var.dns_token, admin_password = replace(bcrypt(var.admin_password, 6), "$", "$$") })
+  user_data = templatefile("${path.module}/templates/init.tpl", {domain_name = var.domain_name, email_address = var.email_address, dns_username = data.vault_generic_secret.dns-config.data["username"], dns_password = data.vault_generic_secret.dns-config.data["password"], dns_token = data.vault_generic_secret.dns-config.data["token"], dns_pk = data.vault_generic_secret.dns-config.data["letsencrypt-pk"], admin_password = replace(bcrypt(random_password.admin-password.result, 6), "$", "$$") })
 
   vpc_security_group_ids = [aws_security_group.ingress-all-ssh.id, aws_security_group.ingress-all-traefik.id]
 

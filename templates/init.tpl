@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Install dependencies docker, docker-compose, htpasswd
+# Install dependencies docker, docker-compose
 sudo yum update -y
-#sudo yum install -y httpd-tools
 sudo amazon-linux-extras install docker -y
 sudo service docker start
 sudo systemctl enable docker
@@ -39,14 +38,14 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.certResolver=leresolver
-      - --entrypoints.websecure.http.tls.domains[0].main=virtp.mcce.mathiasrangger.ch
-      - --entrypoints.websecure.http.tls.domains[0].sans=traefik.virtp.mcce.mathiasrangger.ch,portainer.virtp.mcce.mathiasrangger.ch,nginx.virtp.mcce.mathiasrangger.ch
+      - --entrypoints.websecure.http.tls.domains[0].main=${domain_name}
+      - --entrypoints.websecure.http.tls.domains[0].sans=traefik.${domain_name},portainer.${domain_name},nginx.${domain_name}
       - --api.dashboard=true
       - --providers.docker
 #      - --log.level=DEBUG
       - --certificatesresolvers.leresolver.acme.email=${email_address}
       - --certificatesresolvers.leresolver.acme.storage=./acme.json
-      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+#      - --certificatesresolvers.leresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
       - --certificatesresolvers.leresolver.acme.dnschallenge=true
       - --certificatesresolvers.leresolver.acme.dnschallenge.provider=infomaniak
       - --certificatesresolvers.leresolver.acme.dnschallenge.delaybeforecheck=5
@@ -97,6 +96,31 @@ volumes:
   portainer_data:
   
 EOF
+
+# Create traefic letsencrypt config
+cat << "EOF" > $${project_dir}/acme.json
+{
+  "leresolver": {
+    "Account": {
+      "Email": "${email_address}",
+      "Registration": {
+        "body": {
+          "status": "valid",
+          "contact": [
+            "mailto:${email_address}"
+          ]
+        },
+        "uri": "https://acme-v02.api.letsencrypt.org/acme/acct/374543210"
+      },
+      "PrivateKey": "${dns_pk}",
+      "KeyType": "4096"
+    },
+    "Certificates": null
+  }
+}
+EOF
+
+chmod 0600 $${project_dir}/acme.json
 
 cd $${project_dir}
 docker-compose up
